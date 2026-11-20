@@ -2,7 +2,7 @@ use std::fs;
 
 fn main() {
     {
-        //getting the users name
+        //getting the users name and printing it
         let proc_status_path = String::from("/proc/self/status");
 
         let proc_status_content =
@@ -42,8 +42,6 @@ fn main() {
     //memory info
     let mem_info_path = String::from("/proc/meminfo");
 
-    //println!("From the file {}.\n", mem_info_path);
-
     let mem_info_content = fs::read_to_string(&mem_info_path).expect("Reading a file failed.");
 
     let Some(mem_available) = mem_info_content
@@ -65,5 +63,27 @@ fn main() {
 
     let mem_available: f32 = mem_available as f32 / (1024.0 * 1024.0);
 
-    print!("Memory Available: {mem_available:.2} GB\n");
+    //memory total
+    let Some(mem_total) = mem_info_content
+        .lines()
+        .find(|line| line.starts_with("MemTotal:"))
+    else {
+        return;
+    };
+
+    //from kB string to GB float
+    let mem_total: i64 = mem_total
+        .strip_prefix("MemTotal:")
+        .expect("Could not remove the prefix of mem_available.")
+        .strip_suffix("kB")
+        .expect("Could not remove the suffix of mem_available.")
+        .trim()
+        .parse()
+        .expect("Read value not int");
+
+    let mem_total: f32 = mem_total as f32 / (1024.0 * 1024.0);
+
+    let mem_used: f32 = mem_total - mem_available;
+
+    print!("Memory Used: {mem_used:.2} GB / {mem_total:.2} GB\n");
 }
