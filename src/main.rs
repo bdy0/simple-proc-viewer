@@ -1,40 +1,60 @@
 use std::fs;
 
 fn main() {
-    let proc_status_path = String::from("/proc/self/status");
+    {
+        //getting the users name
+        let proc_status_path = String::from("/proc/self/status");
 
-    let proc_status_content = fs::read_to_string(&proc_status_path)
-        .expect("Reading {proc_status_path} failed.");
+        let proc_status_content =
+            fs::read_to_string(&proc_status_path).expect("Reading a file failed.");
 
-    let Some(user_uid) = proc_status_content
-        .lines()
-        .find(|line| line.starts_with("Uid:"))
-        else { return; };
+        let Some(user_uid) = proc_status_content
+            .lines()
+            .find(|line| line.starts_with("Uid:"))
+        else {
+            return;
+        };
 
-    let user_uid:u32 = user_uid
-        .split_whitespace()
-        .nth(2) //0 - Uid:, 1 - first number
-        .expect("second uid does not exist")
-        .parse() 
-        .unwrap();
+        let user_uid: u32 = user_uid
+            .split_whitespace()
+            .nth(2) //0 - Uid:, 1 - first number
+            .expect("second uid does not exist")
+            .parse()
+            .unwrap();
 
-    println!("User Uid is {user_uid}.");
+        let user_name_path = String::from("/etc/passwd");
+
+        let user_name_content =
+            fs::read_to_string(&user_name_path).expect("Reading a file failed.");
+
+        let Some(user_name) = user_name_content
+            .lines()
+            .find(|line| line.split(":").nth(2) == Some(&user_uid.to_string()))
+        else {
+            return;
+        };
+
+        let user_name = user_name.split(":").nth(0).unwrap();
+
+        println!("Hi {user_name}!");
+    }
 
     //memory info
     let mem_info_path = String::from("/proc/meminfo");
 
     //println!("From the file {}.\n", mem_info_path);
 
-    let mem_info_content = fs::read_to_string(&mem_info_path)
-        .expect("Reading {mem_info_path} failed.");
+    let mem_info_content = fs::read_to_string(&mem_info_path).expect("Reading a file failed.");
 
     let Some(mem_available) = mem_info_content
         .lines()
         .find(|line| line.starts_with("MemAvailable:"))
-        else { return };
+    else {
+        return;
+    };
 
     //from kB string to GB float
-    let mem_available:i64 = mem_available
+    let mem_available: i64 = mem_available
         .strip_prefix("MemAvailable:")
         .expect("Could not remove the prefix of mem_available.")
         .strip_suffix("kB")
@@ -43,7 +63,7 @@ fn main() {
         .parse()
         .expect("Read value not int");
 
-    let mem_available:f32 = mem_available as f32 / (1024.0 * 1024.0);
+    let mem_available: f32 = mem_available as f32 / (1024.0 * 1024.0);
 
     print!("Memory Available: {mem_available:.2} GB\n");
 }
